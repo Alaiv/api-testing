@@ -1,21 +1,21 @@
 package tests;
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import factories.PetFactory;
 import io.restassured.response.Response;
 import models.PetDto;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
+import org.junit.jupiter.api.*;
 import services.PetService;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-public class CreatePetTests extends BaseTest {
+public class SanityPetTests extends BaseTest {
     private PetService petService;
     private PetFactory petFactory;
     private final String messagePath = "message";
     private final String notFoundMessage = "Pet not found";
+    private List<Integer> idsForDelete = new ArrayList<>();
 
     @BeforeAll
     public void initServices() {
@@ -32,6 +32,8 @@ public class CreatePetTests extends BaseTest {
 
         Assertions.assertEquals(200, response.statusCode());
         Assertions.assertEquals(expectedPet.getName(), actualPetDto.getName());
+
+        idsForDelete.add(expectedPet.getId());
     }
 
     @Test
@@ -45,6 +47,8 @@ public class CreatePetTests extends BaseTest {
 
         boolean petsAreEqual = expectedPet.equals(actualPet);
         Assertions.assertTrue(petsAreEqual);
+
+        idsForDelete.add(expectedPet.getId());
     }
 
     @Test
@@ -59,5 +63,28 @@ public class CreatePetTests extends BaseTest {
         Response getResponse = petService.getPet(expectedPet.getId());
         Assertions.assertEquals(404, getResponse.getStatusCode());
         Assertions.assertEquals(notFoundMessage, getResponse.jsonPath().get(messagePath));
+    }
+
+    @Test
+    public void Update_ExistingPet_isSuccessful() {
+        PetDto petForUpdate = petFactory.getBasicPetWithValidData();
+        petService.addPet(petForUpdate);
+
+        String newPetName = "new_name_for_test";
+        petForUpdate.setName(newPetName);
+
+        petService.updatePet(petForUpdate);
+
+        PetDto updatedPet = petService.getPet(petForUpdate.getId()).as(PetDto.class);
+
+        Assertions.assertNotNull(updatedPet);
+        Assertions.assertEquals(newPetName, updatedPet.getName());
+
+        idsForDelete.add(petForUpdate.getId());
+    }
+
+    @AfterAll
+    public void tearDown() {
+        idsForDelete.forEach(id -> petService.deletePet(id));
     }
 }

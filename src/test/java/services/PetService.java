@@ -50,4 +50,18 @@ public class PetService extends BaseService {
                 .extract()
                 .response();
     }
+
+    public Response updatePet(PetDto petDto) {
+        String json = Serializer.extractFrom(petDto);
+
+        return given()
+                .spec(requestSpec)
+                .when()
+                .body(json)
+                .put(basePath)
+                .then()
+                .spec(responseSpec)
+                .extract()
+                .response();
+    }
 }
