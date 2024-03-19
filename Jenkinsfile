@@ -9,6 +9,7 @@ timeout(30) {
                     url: 'git@github.com:Alaiv/api-testing.git'
                 ]]
             ]
+            echo "Finished downloading project"
 
         labelledShell(label: 'Run tests', script: '''
             mvn clean test
